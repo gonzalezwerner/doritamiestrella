@@ -172,29 +172,32 @@
             }
         };
         document.addEventListener('DOMContentLoaded', init);
-        function createHeartPath(particleIndex, totalParticles) {
-            // Parametrización matemática de un corazón
-            // t va de 0 a 1 para trazar todo el contorno del corazón
-            const t = (particleIndex / totalParticles) * Math.PI * 2;
-
-            // Fórmula del corazón (ecuación paramétrica)
-            const scale = 18;
-            const x = 16 * Math.pow(Math.sin(t), 3);
-            const y = 13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t);
-
-            // Invertir Y para que el corazón apunte hacia arriba
-            const heartX = x * (scale / 16);
-            const heartY = -y * (scale / 13);
-
-            // Añadir pequeña variación en profundidad Z
+        function createStarPath(particleIndex, totalParticles) {
+            const numStarPoints = 5;
+            const outerRadius = 35;
+            const innerRadius = 15;
+            const scale = 1.0;
             const zDepth = 4;
+            const starVertices = [];
+            for (let i = 0; i < numStarPoints; i++) {
+                let angle = (i / numStarPoints) * Math.PI * 2 - Math.PI / 2;
+                starVertices.push(new THREE.Vector2(outerRadius * Math.cos(angle), outerRadius * Math.sin(angle)));
+                angle += Math.PI / numStarPoints;
+                starVertices.push(new THREE.Vector2(innerRadius * Math.cos(angle), innerRadius * Math.sin(angle)));
+            }
+            const numSegments = starVertices.length;
+            const t_path = (particleIndex / totalParticles) * numSegments;
+            const segmentIndex = Math.floor(t_path) % numSegments;
+            const segmentProgress = t_path - Math.floor(t_path);
+            const startVertex = starVertices[segmentIndex];
+            const endVertex = starVertices[(segmentIndex + 1) % numSegments];
+            const x = THREE.MathUtils.lerp(startVertex.x, endVertex.x, segmentProgress);
+            const y = THREE.MathUtils.lerp(startVertex.y, endVertex.y, segmentProgress);
             const z = Math.sin((particleIndex / totalParticles) * Math.PI * 4) * (zDepth / 2);
-
-            // Jitter para naturalidad
-            const jitterStrength = 0.15;
+            const jitterStrength = 0.2;
             return new THREE.Vector3(
-                heartX + (Math.random() - 0.5) * jitterStrength,
-                heartY + (Math.random() - 0.5) * jitterStrength,
+                x * scale + (Math.random() - 0.5) * jitterStrength,
+                y * scale + (Math.random() - 0.5) * jitterStrength,
                 z + (Math.random() - 0.5) * jitterStrength * 0.5
             );
         }
@@ -280,7 +283,7 @@
             const disintegrationOffsets = new Float32Array(particleCount * 3);
             for (let i = 0; i < particleCount; i++) {
                 const i3 = i * 3;
-                const pos = createHeartPath(i, particleCount);
+                const pos = createStarPath(i, particleCount);
                 positions[i3] = pos.x;
                 positions[i3 + 1] = pos.y;
                 positions[i3 + 2] = pos.z;
@@ -338,38 +341,25 @@
             canvas.width = size; canvas.height = size;
             const context = canvas.getContext('2d');
             const centerX = size / 2, centerY = size / 2;
-            const scale = size * 0.4;
-
-            // Dibujar un corazón
+            const outerRadius = size * 0.45;
+            const innerRadius = size * 0.20;
+            const numPoints = 5;
             context.beginPath();
-
-            // Usar la misma parametrización del corazón para la textura
-            const heartPath = [];
-            for (let i = 0; i <= 100; i++) {
-                const t = (i / 100) * Math.PI * 2;
-                const x = 16 * Math.pow(Math.sin(t), 3);
-                const y = 13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t);
-                const px = centerX + (x / 16) * scale;
-                const py = centerY - (y / 13) * scale;
-                heartPath.push({ x: px, y: py });
-            }
-
-            // Dibujar el contorno del corazón
-            context.moveTo(heartPath[0].x, heartPath[0].y);
-            for (let i = 1; i < heartPath.length; i++) {
-                context.lineTo(heartPath[i].x, heartPath[i].y);
+            context.moveTo(centerX, centerY - outerRadius);
+            for (let i = 0; i < numPoints; i++) {
+                const outerAngle = (i / numPoints) * Math.PI * 2 - Math.PI / 2;
+                context.lineTo(centerX + outerRadius * Math.cos(outerAngle), centerY + outerRadius * Math.sin(outerAngle));
+                const innerAngle = outerAngle + (Math.PI / numPoints);
+                context.lineTo(centerX + innerRadius * Math.cos(innerAngle), centerY + innerRadius * Math.sin(innerAngle));
             }
             context.closePath();
-
-            // Aplicar gradiente radial
-            const gradient = context.createRadialGradient(centerX, centerY, 0, centerX, centerY, scale);
+            const gradient = context.createRadialGradient(centerX, centerY, 0, centerX, centerY, outerRadius);
             gradient.addColorStop(0,   'rgba(255,255,255,1)');
             gradient.addColorStop(0.3, 'rgba(255,255,220,0.9)');
             gradient.addColorStop(0.6, 'rgba(255,200,150,0.6)');
             gradient.addColorStop(1,   'rgba(255,150,0,0)');
             context.fillStyle = gradient;
             context.fill();
-
             const texture = new THREE.CanvasTexture(canvas);
             texture.needsUpdate = true;
             return texture;
