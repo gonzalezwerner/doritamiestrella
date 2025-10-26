@@ -200,13 +200,13 @@
 
         let scene, camera, renderer, particles, composer, controls;
         let time = 0;
-        let particleCount = 15000;
+        let particleCount = 20000; // Más partículas para mejor definición
         let shockwaves = [];
         let currentShape = 0; // 0: corazón, 1: DORITA, 2: LO SIENTO, 3: corazón grande
         let transitionProgress = 0;
         let isTransitioning = false;
-        const SHAPE_DURATION = 8; // segundos en cada forma
-        const TRANSITION_DURATION = 3; // segundos de transición
+        const SHAPE_DURATION = 6; // segundos en cada forma
+        const TRANSITION_DURATION = 2.5; // segundos de transición
 
         // Formas disponibles
         const shapes = {
@@ -239,60 +239,89 @@
             return new THREE.Vector2(x * scale, -y * scale);
         }
 
-        // Función para crear letras del texto
+        // Función para crear letras del texto con mayor definición
         function createTextShape(particleIndex, totalParticles, text, scale = 1.0) {
+            // Letras en matriz de alta resolución (más píxeles para mejor definición)
             const letterShapes = {
                 'D': [
-                    [0,0], [0,1], [0,2], [0,3], [0,4],
-                    [1,0], [2,0], [3,1], [3,2], [3,3], [2,4], [1,4]
+                    [0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[0,7],[0,8],
+                    [1,0],[2,0],[3,0],[4,1],[5,2],[5,3],[5,4],[5,5],[5,6],[4,7],[3,8],[2,8],[1,8],
+                    [1,1],[2,1],[3,1],[4,2],[4,3],[4,4],[4,5],[4,6],[3,7],[2,7],[1,7]
                 ],
                 'O': [
-                    [1,0], [2,0], [3,0],
-                    [0,1], [4,1],
-                    [0,2], [4,2],
-                    [0,3], [4,3],
-                    [1,4], [2,4], [3,4]
+                    [1,0],[2,0],[3,0],[4,0],[5,0],
+                    [0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[0,7],
+                    [6,1],[6,2],[6,3],[6,4],[6,5],[6,6],[6,7],
+                    [1,8],[2,8],[3,8],[4,8],[5,8],
+                    [1,1],[2,1],[3,1],[4,1],[5,1],
+                    [1,7],[2,7],[3,7],[4,7],[5,7]
                 ],
                 'R': [
-                    [0,0], [0,1], [0,2], [0,3], [0,4],
-                    [1,0], [2,0], [3,1],
-                    [1,2], [2,2],
-                    [3,3], [3,4]
+                    [0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[0,7],[0,8],
+                    [1,0],[2,0],[3,0],[4,0],[5,1],[5,2],[4,3],[3,4],[2,4],[1,4],
+                    [1,1],[2,1],[3,1],[4,1],[4,2],
+                    [2,5],[3,5],[3,6],[4,6],[4,7],[5,7],[5,8]
                 ],
                 'I': [
-                    [0,0], [1,0], [2,0],
-                    [1,1], [1,2], [1,3],
-                    [0,4], [1,4], [2,4]
+                    [0,0],[1,0],[2,0],[3,0],[4,0],
+                    [2,1],[2,2],[2,3],[2,4],[2,5],[2,6],[2,7],
+                    [0,8],[1,8],[2,8],[3,8],[4,8],
+                    [1,1],[3,1],[1,7],[3,7]
                 ],
                 'T': [
-                    [0,0], [1,0], [2,0], [3,0], [4,0],
-                    [2,1], [2,2], [2,3], [2,4]
+                    [0,0],[1,0],[2,0],[3,0],[4,0],[5,0],[6,0],
+                    [3,1],[3,2],[3,3],[3,4],[3,5],[3,6],[3,7],[3,8],
+                    [1,1],[2,1],[4,1],[5,1],
+                    [2,2],[4,2]
                 ],
                 'A': [
-                    [2,0],
-                    [1,1], [3,1],
-                    [0,2], [4,2],
-                    [0,3], [1,3], [2,3], [3,3], [4,3],
-                    [0,4], [4,4]
+                    [3,0],[4,0],
+                    [2,1],[5,1],[2,2],[5,2],
+                    [1,3],[6,3],[1,4],[6,4],
+                    [0,5],[7,5],[0,6],[7,6],[0,7],[7,7],[0,8],[7,8],
+                    [1,5],[2,5],[3,5],[4,5],[5,5],[6,5],
+                    [3,1],[4,1],[2,3],[3,3],[4,3],[5,3]
                 ],
                 'L': [
-                    [0,0], [0,1], [0,2], [0,3], [0,4],
-                    [1,4], [2,4], [3,4]
+                    [0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[0,7],[0,8],
+                    [1,8],[2,8],[3,8],[4,8],[5,8],
+                    [1,7],[2,7],[3,7],[4,7]
                 ],
                 'S': [
-                    [1,0], [2,0], [3,0],
-                    [0,1], [1,2], [2,2],
-                    [3,3], [0,4], [1,4], [2,4]
-                ]
+                    [1,0],[2,0],[3,0],[4,0],[5,0],[6,0],
+                    [0,1],[0,2],[1,3],[2,4],[3,4],[4,4],
+                    [5,5],[6,6],[6,7],
+                    [0,8],[1,8],[2,8],[3,8],[4,8],[5,8],
+                    [1,1],[2,1],
+                    [4,7],[5,7]
+                ],
+                'E': [
+                    [0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[0,7],[0,8],
+                    [1,0],[2,0],[3,0],[4,0],[5,0],
+                    [1,4],[2,4],[3,4],[4,4],
+                    [1,8],[2,8],[3,8],[4,8],[5,8],
+                    [1,1],[2,1],
+                    [1,5],[2,5],
+                    [1,7],[2,7]
+                ],
+                'N': [
+                    [0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[0,7],[0,8],
+                    [1,1],[2,2],[3,3],[4,4],[5,5],[6,6],
+                    [7,0],[7,1],[7,2],[7,3],[7,4],[7,5],[7,6],[7,7],[7,8],
+                    [1,2],[2,3],[3,4],[4,5],[5,6],[6,7]
+                ],
+                ' ': []
             };
 
             // Construir el texto completo
             let allPoints = [];
             let offsetX = 0;
-            const letterSpacing = 6;
+            const letterSpacing = 10;
 
             for (let char of text) {
-                if (letterShapes[char]) {
+                if (char === ' ') {
+                    offsetX += letterSpacing;
+                } else if (letterShapes[char]) {
                     const points = letterShapes[char].map(p => [p[0] + offsetX, p[1]]);
                     allPoints.push(...points);
                     offsetX += letterSpacing;
@@ -301,23 +330,22 @@
 
             if (allPoints.length === 0) return new THREE.Vector2(0, 0);
 
-            // Distribuir partículas entre todos los puntos
-            const pointsPerPixel = Math.ceil(totalParticles / allPoints.length);
+            // Distribuir partículas entre todos los puntos con más densidad
+            const pointsPerPixel = Math.max(20, Math.ceil(totalParticles / allPoints.length));
             const pointIndex = Math.floor(particleIndex / pointsPerPixel) % allPoints.length;
             const point = allPoints[pointIndex];
 
             // Centrar el texto
             const centerX = offsetX / 2;
-            const centerY = 2.5;
+            const centerY = 4;
 
-            // Añadir jitter para rellenar
-            const jitter = (particleIndex % pointsPerPixel) / pointsPerPixel;
-            const jitterX = (Math.random() - 0.5) * 0.8;
-            const jitterY = (Math.random() - 0.5) * 0.8;
+            // Añadir jitter para rellenar mejor los píxeles
+            const jitterX = (Math.random() - 0.5) * 0.4;
+            const jitterY = (Math.random() - 0.5) * 0.4;
 
             return new THREE.Vector2(
-                (point[0] - centerX) * scale * 3 + jitterX,
-                (point[1] - centerY) * scale * 3 + jitterY
+                (point[0] - centerX) * scale * 2.5 + jitterX,
+                (point[1] - centerY) * scale * 2.5 + jitterY
             );
         }
 
@@ -332,10 +360,10 @@
                     pos2D = createHeartShape(t, 2.0);
                     break;
                 case shapes.dorita:
-                    pos2D = createTextShape(particleIndex, totalParticles, 'DORITA', 1.2);
+                    pos2D = createTextShape(particleIndex, totalParticles, 'DORITA', 1.0);
                     break;
                 case shapes.loSiento:
-                    pos2D = createTextShape(particleIndex, totalParticles, 'LO SIENTO', 0.8);
+                    pos2D = createTextShape(particleIndex, totalParticles, 'LO SIENTO', 0.7);
                     break;
                 case shapes.heartBig:
                     pos2D = createHeartShape(t, 2.8);
@@ -470,7 +498,7 @@
 
             const texture = createParticleTexture();
             const material = new THREE.PointsMaterial({
-                size: 3.5,
+                size: 2.5, // Partículas más pequeñas para texto más definido
                 map: texture,
                 vertexColors: true,
                 transparent: true,
